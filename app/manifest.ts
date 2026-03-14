@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: 'FIT.EVAL',
     description: 'Technical fitness test execution and ranking system',
     start_url: '/',
-    display: 'standalone',
+    display: 'fullscreen',
     background_color: '#050505',
     theme_color: '#E2FF31',
     icons: [

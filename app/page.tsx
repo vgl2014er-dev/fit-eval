@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Play, Maximize, Minimize } from 'lucide-react';
+import { X, Play, Maximize, Minimize, Download, Loader2, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 
 const TESTS = [
@@ -35,8 +35,56 @@ export default function FitnessApp() {
   const [showOverlay, setShowOverlay] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isCaching, setIsCaching] = useState(false);
+  const [isCached, setIsCached] = useState(false);
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const checkCache = async () => {
+      if (typeof window !== 'undefined' && 'caches' in window) {
+        try {
+          const cache = await caches.open('fitness-videos');
+          const keys = await cache.keys();
+          const cachedUrls = new Set(keys.map(request => request.url));
+          const allCached = TESTS.every(test => cachedUrls.has(new URL(test.videoUrl, window.location.origin).href));
+          setIsCached(allCached);
+        } catch (err) {
+          console.error('Cache check failed:', err);
+        }
+      }
+    };
+    checkCache();
+  }, []);
+
+  const cacheVideos = async () => {
+    if (typeof window === 'undefined' || !('caches' in window)) return;
+    setIsCaching(true);
+    try {
+      const cache = await caches.open('fitness-videos');
+      // Using addAll might fail if one fails, so we do them individually for better feedback
+      await Promise.all(TESTS.map(async (test) => {
+        try {
+          const response = await fetch(test.videoUrl, { mode: 'cors' });
+          if (response.ok) {
+            await cache.put(test.videoUrl, response);
+          }
+        } catch (e) {
+          console.warn(`Failed to cache ${test.title}:`, e);
+        }
+      }));
+      
+      // Re-verify
+      const keys = await cache.keys();
+      const cachedUrls = new Set(keys.map(request => request.url));
+      const allCached = TESTS.every(test => cachedUrls.has(new URL(test.videoUrl, window.location.origin).href));
+      setIsCached(allCached);
+    } catch (error) {
+      console.error('Caching process failed:', error);
+    } finally {
+      setIsCaching(false);
+    }
+  };
 
   const handleUserActivity = () => {
     setShowOverlay(true);
@@ -92,6 +140,23 @@ export default function FitnessApp() {
       <header className="border-b border-white/20 p-4 flex justify-between items-center text-xs sm:text-sm tracking-widest bg-ink relative z-10">
         <div>SYS.FITNESS.EVAL</div>
         <div className="flex items-center gap-6">
+          <button 
+            onClick={cacheVideos}
+            disabled={isCaching || isCached}
+            className={`flex items-center gap-2 transition-colors ${isCached ? 'text-volt' : 'text-white/70 hover:text-white'} ${isCaching ? 'cursor-wait' : ''}`}
+            title={isCached ? "OFFLINE READY" : "CACHE VIDEOS FOR OFFLINE USE"}
+          >
+            {isCaching ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : isCached ? (
+              <CheckCircle2 size={16} />
+            ) : (
+              <Download size={16} />
+            )}
+            <span className="hidden sm:inline text-[10px] tracking-[0.2em]">
+              {isCaching ? 'CACHING...' : isCached ? 'OFFLINE READY' : 'CACHE VIDEOS'}
+            </span>
+          </button>
           <button 
             onClick={toggleFullscreen}
             className="flex items-center gap-2 text-white/70 hover:text-white transition-colors"

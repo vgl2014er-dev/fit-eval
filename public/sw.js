@@ -7,6 +7,16 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // A simple pass-through fetch handler to satisfy PWA installability requirements
-  event.respondWith(fetch(event.request));
+  // Check if the request is for a video
+  if (event.request.url.includes('.mp4')) {
+    event.respondWith(
+      caches.match(event.request).then((response) => {
+        // Return cached response if found, otherwise fetch from network
+        return response || fetch(event.request);
+      })
+    );
+  } else {
+    // Default pass-through for other requests
+    event.respondWith(fetch(event.request));
+  }
 });
