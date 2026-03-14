@@ -164,28 +164,28 @@ export default function FitnessApp() {
             {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
             <span className="hidden sm:inline">{isFullscreen ? 'EXIT FULLSCREEN' : 'FULLSCREEN'}</span>
           </button>
-          <Link href="/ranks" className="flex items-center gap-2 text-volt hover:text-white transition-colors cursor-pointer">
-            <span className="w-2 h-2 bg-volt rounded-full animate-pulse shadow-[0_0_8px_#E2FF31]"></span>
-            RANKS
-          </Link>
         </div>
       </header>
 
       {/* List */}
       <div className="flex-1 flex flex-col">
         {TESTS.map((test, index) => (
-          <button
+          <div
             key={test.id}
             onClick={() => setActiveVideo(test.videoUrl)}
-            className={`group flex-1 flex flex-col justify-between p-6 sm:p-10 border-b border-white/20 transition-all duration-300 ${test.accent} text-left relative overflow-hidden`}
+            className={`group flex-1 flex flex-col justify-between p-6 sm:p-10 border-b border-white/20 transition-all duration-300 ${test.accent} text-left relative overflow-hidden cursor-pointer`}
           >
             <div className="flex justify-between items-start z-10 w-full">
               <span className="text-xs sm:text-sm opacity-50 group-hover:opacity-100 transition-opacity">
                 [{test.code}]
               </span>
-              <span className="text-xs sm:text-sm border border-white/20 px-3 py-1 group-hover:border-current transition-colors">
-                INITIATE SEQUENCE
-              </span>
+              <Link 
+                href={`/ranks/${test.id}`}
+                onClick={(e) => e.stopPropagation()}
+                className="text-xs sm:text-sm border border-white/20 px-3 py-1 group-hover:border-current transition-colors hover:bg-white hover:text-ink"
+              >
+                RANKS
+              </Link>
             </div>
 
             <div className="z-10 mt-12">
@@ -202,7 +202,7 @@ export default function FitnessApp() {
             <div className="absolute -right-4 -bottom-10 font-display text-[250px] sm:text-[400px] leading-none opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
               0{index + 1}
             </div>
-          </button>
+          </div>
         ))}
       </div>
 
