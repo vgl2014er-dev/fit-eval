@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: var(--font-anton), sans-serif;
+  --font-mono: var(--font-mono), monospace;
+  --color-volt: #E2FF31;
+  --color-infrared: #FF3131;
+  --color-ink: #050505;
+}
+
+body {
+  background-color: var(--color-ink);
+  color: white;
+}
