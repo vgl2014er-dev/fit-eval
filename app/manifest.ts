@@ -7,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     description: 'Technical fitness test execution and ranking system',
     start_url: '/',
     id: '/',
-    display: 'standalone',
+    display: 'fullscreen',
     background_color: '#050505',
     theme_color: '#E2FF31',
     icons: [
