@@ -18,8 +18,8 @@ export const metadata: Metadata = {
   title: 'SYS.FITNESS.EVAL',
   description: 'Technical fitness test execution and ranking system',
   icons: {
-    icon: '/logo.png',
-    apple: '/logo.png',
+    icon: '/android/launchericon-192x192.png',
+    apple: '/android/launchericon-192x192.png',
   },
   appleWebApp: {
     capable: true,
