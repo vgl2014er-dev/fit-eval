@@ -15,8 +15,5 @@ self.addEventListener('fetch', (event) => {
         return response || fetch(event.request);
       })
     );
-  } else {
-    // Default pass-through for other requests
-    event.respondWith(fetch(event.request));
   }
 });

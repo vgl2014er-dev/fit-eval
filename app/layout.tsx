@@ -17,7 +17,6 @@ const mono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: 'SYS.FITNESS.EVAL',
   description: 'Technical fitness test execution and ranking system',
-  manifest: '/manifest.webmanifest',
   icons: {
     icon: '/logo.png',
     apple: '/logo.png',
