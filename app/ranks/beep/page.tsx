@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'motion/react';
 import { ArrowLeft, Edit2, Loader2 } from 'lucide-react';
-import { getRanks, RankEntry } from '@/lib/rankService';
+import { subscribeToRanks, RankEntry } from '@/lib/rankService';
 
 export default function BeepRanksPage() {
   const [ranks, setRanks] = useState<RankEntry[]>([]);
@@ -12,18 +12,14 @@ export default function BeepRanksPage() {
 
   useEffect(() => {
     let active = true;
-    const loadRanks = async () => {
-      try {
-        const data = await getRanks('beep');
-        if (active) setRanks(data);
-      } catch (error) {
-        console.error('Failed to load ranks:', error);
-      } finally {
-        if (active) setLoading(false);
+    const unsubscribe = subscribeToRanks('beep', (data) => {
+      if (active) {
+        setRanks(data);
+        setLoading(false);
       }
-    };
-    loadRanks();
-    return () => { active = false; };
+    });
+
+    return () => { active = false; unsubscribe(); };
   }, []);
 
   return (
@@ -99,7 +95,7 @@ export default function BeepRanksPage() {
                     <span className={`font-display text-2xl sm:text-5xl ${rankClass}`}>
                       {rankNum}
                     </span>
-                    <span className={`text-base sm:text-2xl font-bold tracking-tight ${isTop3 ? 'font-display uppercase' : ''}`}>
+                    <span className={`text-base sm:text-3xl font-bold tracking-tight uppercase`}>
                       {player.name}
                     </span>
                   </div>

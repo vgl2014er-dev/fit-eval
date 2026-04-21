@@ -90,7 +90,7 @@ export default function EditYoyoRanksPage() {
               />
             </div>
             <div className="flex flex-col gap-2">
-              <label className="text-[10px] tracking-widest opacity-50">INITIAL_SCORE</label>
+              <label className="text-[10px] tracking-widest opacity-50">INITIAL_DISTANCE</label>
               <input
                 type="number"
                 value={newScore}
@@ -129,7 +129,7 @@ export default function EditYoyoRanksPage() {
                 >
                   <div className="flex flex-col">
                     <span className="text-lg font-bold">{entry.name}</span>
-                    <span className="text-xs text-white/50">{entry.score} PT</span>
+                    <span className="text-xs text-white/50">{entry.score} m</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
@@ -165,7 +165,7 @@ export default function EditYoyoRanksPage() {
   // Real update would need more state per row. I'll stick to a clean Add/Delete flow first.
   async function handleUpdate(entry: RankEntry) {
     const newName = prompt('NEW NAME:', entry.name);
-    const newScore = prompt('NEW SCORE:', entry.score.toString());
+    const newScore = prompt('NEW DISTANCE (m):', entry.score.toString());
     if (newName && newScore && (newName !== entry.name || parseInt(newScore) !== entry.score)) {
       setSaving(true);
       try {

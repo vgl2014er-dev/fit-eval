@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'motion/react';
 import { ArrowLeft, Edit2, Loader2 } from 'lucide-react';
-import { getRanks, seedInitialYoyoRanks, RankEntry } from '@/lib/rankService';
+import { getRanks, subscribeToRanks, RankEntry } from '@/lib/rankService';
 
 export default function YoyoRanksPage() {
   const [ranks, setRanks] = useState<RankEntry[]>([]);
@@ -12,19 +12,20 @@ export default function YoyoRanksPage() {
 
   useEffect(() => {
     let active = true;
-    const loadRanks = async () => {
-      try {
-        await seedInitialYoyoRanks();
-        const data = await getRanks('yoyo');
-        if (active) setRanks(data);
-      } catch (error) {
-        console.error('Failed to load ranks:', error);
-      } finally {
-        if (active) setLoading(false);
+    
+    // Subscribe to live updates
+    const unsubscribe = subscribeToRanks('yoyo', (data) => {
+      if (active) {
+        setRanks(data);
+        setLoading(false);
       }
-    };
-    loadRanks();
-    return () => { active = false; };
+    });
+
+    // Separately trigger seeding check if necessary
+    // This runs once on mount
+    getRanks('yoyo').catch(err => console.error('Seed check failed:', err));
+
+    return () => { active = false; unsubscribe(); };
   }, []);
 
   return (
@@ -55,7 +56,7 @@ export default function YoyoRanksPage() {
 
         {loading ? (
           <div className="flex justify-center py-20">
-            <Loader2 className="animate-spin text-infrared" size={48} />
+            <Loader2 className="animate-spin text-infrared opacity-20" size={48} />
           </div>
         ) : (
           <div className="flex flex-col gap-2 pb-20">
@@ -100,14 +101,14 @@ export default function YoyoRanksPage() {
                     <span className={`font-display text-2xl sm:text-5xl ${rankClass}`}>
                       {rankNum}
                     </span>
-                    <span className={`text-base sm:text-2xl font-bold tracking-tight ${isTop3 ? 'font-display uppercase' : ''}`}>
+                    <span className={`text-base sm:text-3xl font-bold tracking-tight uppercase`}>
                       {player.name}
                     </span>
                   </div>
                   <div className="text-right">
-                    <div className="text-[10px] sm:text-xs opacity-60 mb-1">SCORE</div>
+                    <div className="text-[10px] sm:text-xs opacity-60 mb-1">DISTANCE</div>
                     <div className={`font-display text-xl sm:text-4xl leading-none`}>
-                      {player.score}
+                      {player.score}M
                     </div>
                   </div>
                 </motion.div>

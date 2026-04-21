@@ -1,16 +1,16 @@
-import { db } from './firebase';
+import { rtdb } from './firebase';
 import { 
-  collection, 
-  getDocs, 
+  ref, 
+  get, 
+  set, 
+  push, 
+  update, 
+  remove, 
   query, 
-  orderBy, 
-  addDoc, 
-  updateDoc, 
-  doc, 
-  deleteDoc, 
-  writeBatch,
-  where
-} from 'firebase/firestore';
+  orderByChild, 
+  equalTo,
+  onValue
+} from 'firebase/database';
 
 export interface RankEntry {
   id?: string;
@@ -22,34 +22,48 @@ export interface RankEntry {
 }
 
 export const getRanks = async (testId: string): Promise<RankEntry[]> => {
-  const ranksRef = collection(db, 'ranks');
-  const q = query(
-    ranksRef, 
-    where('testId', '==', testId),
-    orderBy('score', 'desc'),
-    orderBy('createdAt', 'asc')
-  );
+  const ranksRef = ref(rtdb, 'ranks');
   
-  const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data()
-  } as RankEntry));
+  const snapshot = await get(ranksRef);
+  if (!snapshot.exists()) {
+    if (testId === 'yoyo') {
+      return await seedInitialYoyoRanks();
+    }
+    return [];
+  }
+
+  const data = snapshot.val();
+  const result: RankEntry[] = Object.keys(data)
+    .map(key => ({
+      id: key,
+      ...data[key]
+    } as RankEntry))
+    .filter(entry => entry.testId === testId);
+
+  if (result.length === 0 && testId === 'yoyo') {
+    return await seedInitialYoyoRanks();
+  }
+
+  return result.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    return a.createdAt - b.createdAt;
+  });
 };
 
 export const updateRank = async (id: string, name: string, score: number) => {
-  const rankRef = doc(db, 'ranks', id);
-  await updateDoc(rankRef, { name, score, updatedAt: Date.now() });
+  const rankRef = ref(rtdb, `ranks/${id}`);
+  await update(rankRef, { name, score, updatedAt: Date.now() });
 };
 
 export const deleteRank = async (id: string) => {
-  const rankRef = doc(db, 'ranks', id);
-  await deleteDoc(rankRef);
+  const rankRef = ref(rtdb, `ranks/${id}`);
+  await remove(rankRef);
 };
 
 export const addRank = async (testId: string, name: string, score: number) => {
-  const ranksRef = collection(db, 'ranks');
-  await addDoc(ranksRef, {
+  const ranksRef = ref(rtdb, 'ranks');
+  const newRankRef = push(ranksRef);
+  await set(newRankRef, {
     testId,
     name,
     score,
@@ -57,12 +71,19 @@ export const addRank = async (testId: string, name: string, score: number) => {
   });
 };
 
-export const seedInitialYoyoRanks = async () => {
-  const currentRanks = await getRanks('yoyo');
-  if (currentRanks.length > 0) return; // Already seeded
-
-  const batch = writeBatch(db);
-  const ranksRef = collection(db, 'ranks');
+export const seedInitialYoyoRanks = async (): Promise<RankEntry[]> => {
+  const ranksRef = ref(rtdb, 'ranks');
+  // Check again to be absolute sure we don't double seed
+  const snap = await get(ranksRef);
+  if (snap.exists()) {
+    const data = snap.val();
+    const existing = Object.keys(data)
+      .map(k => ({id: k, ...data[k]}))
+      .filter((entry: any) => entry.testId === 'yoyo');
+    if (existing.length > 0) {
+      return existing.sort((a: any, b: any) => b.score - a.score);
+    }
+  }
 
   const initialData = [
     { name: "Erik", score: 1360 },
@@ -82,14 +103,45 @@ export const seedInitialYoyoRanks = async () => {
     { name: "Paul", score: 400 },
   ];
 
+  const updates: any = {};
+  const seededRanks: RankEntry[] = [];
+
   initialData.forEach((item, index) => {
-    const newDocRef = doc(ranksRef);
-    batch.set(newDocRef, {
+    const newRankRef = push(ref(rtdb, 'ranks'));
+    const docData = {
       ...item,
       testId: 'yoyo',
-      createdAt: Date.now() + index // Ensure slight order diff for same scores if needed
-    });
+      createdAt: Date.now() + index
+    };
+    updates[`ranks/${newRankRef.key}`] = docData;
+    seededRanks.push({ id: newRankRef.key!, ...docData });
   });
 
-  await batch.commit();
+  await update(ref(rtdb), updates);
+  return seededRanks.sort((a, b) => b.score - a.score);
 };
+
+export const subscribeToRanks = (testId: string, callback: (ranks: RankEntry[]) => void) => {
+  const ranksRef = ref(rtdb, 'ranks');
+  
+  return onValue(ranksRef, (snapshot) => {
+    if (!snapshot.exists()) {
+      callback([]);
+      return;
+    }
+    const data = snapshot.val();
+    const result: RankEntry[] = Object.keys(data)
+      .map(key => ({
+        id: key,
+        ...data[key]
+      } as RankEntry))
+      .filter(entry => entry.testId === testId);
+
+    const sorted = result.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return a.createdAt - b.createdAt;
+    });
+    callback(sorted);
+  });
+};
+
