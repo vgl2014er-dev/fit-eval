@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Play, Maximize, Minimize, Download, Loader2, CheckCircle2 } from 'lucide-react';
+import { X, Play, Maximize, Minimize, Download, Loader2, CheckCircle2, Volume2 } from 'lucide-react';
 import Link from 'next/link';
 
 const TESTS = [
@@ -37,8 +37,54 @@ export default function FitnessApp() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isCaching, setIsCaching] = useState(false);
   const [isCached, setIsCached] = useState(false);
+  const [volumeBoost, setVolumeBoost] = useState(1);
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const gainNodeRef = useRef<GainNode | null>(null);
+  const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+
+  useEffect(() => {
+    if (activeVideo && videoRef.current) {
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+      
+      const ctx = audioCtxRef.current;
+      
+      if (!gainNodeRef.current) {
+        gainNodeRef.current = ctx.createGain();
+        gainNodeRef.current.connect(ctx.destination);
+      }
+
+      // Always create a new source for the new video element
+      const source = ctx.createMediaElementSource(videoRef.current);
+      source.connect(gainNodeRef.current);
+      sourceRef.current = source;
+
+      // Ensure context is resumed on user interaction
+      if (ctx.state === 'suspended') {
+        const resume = () => {
+          ctx.resume();
+          window.removeEventListener('click', resume);
+        };
+        window.addEventListener('click', resume);
+      }
+
+      return () => {
+        if (sourceRef.current) {
+          sourceRef.current.disconnect();
+          sourceRef.current = null;
+        }
+      };
+    }
+  }, [activeVideo]);
+
+  useEffect(() => {
+    if (gainNodeRef.current) {
+      gainNodeRef.current.gain.value = volumeBoost;
+    }
+  }, [volumeBoost]);
 
   useEffect(() => {
     const checkCache = async () => {
@@ -226,6 +272,7 @@ export default function FitnessApp() {
                 className="w-full h-full object-cover"
                 controls
                 playsInline
+                crossOrigin="anonymous"
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
               />
@@ -255,6 +302,26 @@ export default function FitnessApp() {
                 >
                   <X size={24} />
                 </button>
+
+                {/* Volume Booster Slider */}
+                <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-3 pointer-events-auto bg-black/40 backdrop-blur-md p-4 rounded-2xl border border-white/10 min-w-[200px]">
+                  <div className="flex justify-between w-full text-[10px] tracking-widest opacity-70">
+                    <span>VOL.BOOST</span>
+                    <span className={volumeBoost > 1 ? "text-volt" : ""}>{Math.round(volumeBoost * 100)}%</span>
+                  </div>
+                  <div className="flex items-center gap-4 w-full">
+                    <Volume2 size={16} className={volumeBoost > 1 ? "text-volt" : "text-white/50"} />
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max="3" 
+                      step="0.1" 
+                      value={volumeBoost} 
+                      onChange={(e) => setVolumeBoost(parseFloat(e.target.value))}
+                      className="flex-1 h-1 bg-white/20 rounded-lg appearance-none cursor-pointer accent-volt"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </motion.div>
