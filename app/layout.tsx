@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Anton, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
-import PWARegister from '@/components/PWARegister';
 
 const anton = Anton({
   weight: '400',
@@ -36,7 +35,6 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
     <html lang="en" className={`${anton.variable} ${mono.variable}`}>
       <body className="bg-ink text-white antialiased selection:bg-volt selection:text-ink" suppressHydrationWarning>
-        <PWARegister />
         {children}
       </body>
     </html>
