@@ -172,8 +172,12 @@ export default function FitnessApp() {
 
   useEffect(() => {
     if (activeVideo) {
-      handleUserActivity();
-      setIsPlaying(false);
+      Promise.resolve().then(() => {
+        setShowOverlay(true);
+        setIsPlaying(false);
+      });
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+      idleTimerRef.current = setTimeout(() => setShowOverlay(false), 2500);
     }
     return () => {
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
