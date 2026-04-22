@@ -3,7 +3,8 @@ import withPWAInit from '@ducanh2912/next-pwa';
 
 const withPWA = withPWAInit({
   dest: 'public',
-  disable: process.env.NODE_ENV === 'development'
+  // Temporarily enabling in dev so you can test "Add to homescreen" from the preview url
+  disable: false
 });
 
 const nextConfig: NextConfig = {
